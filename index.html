@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Perhitungan Stok Fisik Gudang</title>
+
+<!-- PWA: Android -->
+<meta name="theme-color" content="#16324F">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<!-- PWA: iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Stok Gudang">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root{
+    --navy:#16324F;
+    --navy-deep:#0E2338;
+    --paper:#FBFAF5;
+    --paper-line:#DDD6C4;
+    --ink:#20293A;
+    --ink-soft:#5B6472;
+    --gold:#B8860B;
+    --gold-soft:#F1E4C2;
+    --green:#2F7A4B;
+    --green-soft:#E4F1E8;
+    --red:#B3261E;
+    --red-soft:#FBEAE9;
+    --card:#FFFFFF;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 2.1em;
+    background-attachment:local;
+  }
+  .app{max-width:1080px;margin:0 auto;padding:28px 20px 80px;}
+
+  /* Header */
+  .masthead{
+    background:linear-gradient(135deg,var(--navy),var(--navy-deep));
+    color:#fff;
+    border-radius:var(--radius);
+    padding:26px 28px;
+    margin-bottom:20px;
+    position:relative;
+    overflow:hidden;
+  }
+  .masthead::after{
+    content:"";
+    position:absolute; right:-40px; top:-40px;
+    width:180px;height:180px;border-radius:50%;
+    background:radial-gradient(circle, rgba(184,134,11,0.35), transparent 70%);
+  }
+  .masthead h1{
+    font-family:'Fraunces',serif;
+    font-size:1.7rem;
+    font-weight:600;
+    margin:0 0 4px;
+    letter-spacing:0.2px;
+  }
+  .masthead p{margin:0;opacity:0.75;font-size:0.88rem;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.72rem;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    opacity:0.65;
+    margin-bottom:6px;
+  }
+
+  /* Meta form */
+  .meta-card{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    margin-bottom:22px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+  }
+  .field label{
+    display:block;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    margin-bottom:5px;
+    font-weight:600;
+  }
+  .field input{
+    width:100%;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:8px 10px;
+    font-size:0.92rem;
+    font-family:'Inter',sans-serif;
+    color:var(--ink);
+    background:#fff;
+  }
+  .field input:focus{outline:2px solid var(--navy);outline-offset:1px;}
+
+  /* Tabs */
+  .tabs{
+    display:flex; gap:8px; margin-bottom:22px; border-bottom:2px solid var(--paper-line);
+  }
+  .tab-btn{
+    background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif;
+    font-size:0.88rem; font-weight:600; color:var(--ink-soft);
+    padding:10px 16px; border-bottom:3px solid transparent; margin-bottom:-2px;
+  }
+  .tab-btn:hover{color:var(--navy);}
+  .tab-btn.active{color:var(--navy); border-bottom-color:var(--navy);}
+  .tab-panel{}
+
+  /* Groups */
+  .group{margin-bottom:26px;}
+  .group-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    border-bottom:2px solid var(--navy);
+    padding-bottom:6px;
+    margin-bottom:12px;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .group-head input.group-name{
+    font-family:'Fraunces',serif;
+    font-size:1.15rem;
+    font-weight:600;
+    border:none;
+    background:transparent;
+    color:var(--navy);
+    padding:2px 0;
+    min-width:160px;
+    flex:1;
+  }
+  .group-head input.group-name:focus{outline:none;border-bottom:1px dashed var(--navy);}
+  .group-total{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.82rem;
+    color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  .group-total b{color:var(--navy);}
+  .group-remove{
+    background:none;border:none;color:var(--red);cursor:pointer;
+    font-size:0.75rem;font-family:'Inter',sans-serif;
+    text-decoration:underline;padding:0;
+  }
+  .group-toggle{
+    background:none; border:1px solid var(--paper-line); color:var(--navy);
+    cursor:pointer; font-size:0.75rem; font-family:'Inter',sans-serif;
+    padding:3px 9px; border-radius:6px; white-space:nowrap; font-weight:600;
+    display:flex; align-items:center; gap:5px;
+  }
+  .group-toggle:hover{background:var(--card);}
+  .group-toggle .chevron{display:inline-block; transition:transform 0.15s ease; font-size:0.7rem;}
+  .group.collapsed .group-toggle .chevron{transform:rotate(-90deg);}
+  .group.collapsed .group-head{margin-bottom:0; border-bottom-style:dashed;}
+  .group.collapsed .items,
+  .group.collapsed .add-item-btn,
+  .group.collapsed .compare-wrap{display:none;}
+
+  /* Item card */
+  .item{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:var(--radius);
+    padding:16px 18px;
+    margin-bottom:14px;
+  }
+  .item-top{
+    display:grid;
+    grid-template-columns: 90px 110px 1fr 110px 110px auto;
+    gap:10px;
+    margin-bottom:12px;
+    align-items:end;
+  }
+  .item-top .field label{margin-bottom:4px;}
+  .item-top input{padding:7px 9px;font-size:0.88rem;}
+  .remove-btn{
+    background:var(--red-soft); color:var(--red); border:1px solid #f0d3d1;
+    border-radius:6px; padding:8px 10px; font-size:0.78rem; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600; height:36px;
+  }
+  .remove-btn:hover{background:#f6dcda;}
+
+  /* Ledger rows (signature element) */
+  .ledger{
+    background:repeating-linear-gradient(#fff, #fff 34px, #f2eee2 35px);
+    border:1px solid var(--paper-line);
+    border-radius:8px;
+    padding:6px 10px;
+  }
+  .ledger-row{
+    display:flex; align-items:center; gap:6px;
+    padding:5px 0;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.86rem;
+    flex-wrap:nowrap;
+  }
+  .ledger-row input{
+    width:56px;
+    border:1px solid var(--paper-line);
+    border-radius:5px;
+    padding:5px 4px;
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:0.86rem;
+    background:#fff;
+  }
+  .op{color:var(--ink-soft); font-weight:600; width:14px; text-align:center; flex-shrink:0;}
+  .eq{color:var(--navy); font-weight:700;}
+  .result-badge{
+    margin-left:auto;
+    background:var(--gold-soft);
+    border:1px solid var(--gold);
+    color:#7A5A08;
+    font-weight:700;
+    border-radius:6px;
+    padding:5px 10px;
+    min-width:78px;
+    text-align:right;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .del-row{
+    background:none;border:none;color:#b8b2a0;cursor:pointer;font-size:0.95rem;
+    padding:2px 4px; flex-shrink:0;
+  }
+  .del-row:hover{color:var(--red);}
+  .ledger-labels{
+    display:flex; gap:6px; font-size:0.62rem; color:var(--ink-soft);
+    text-transform:uppercase; letter-spacing:0.05em; padding:2px 0 4px;
+    font-family:'Inter',sans-serif;
+  }
+  .add-row-btn{
+    margin-top:8px;
+    background:none; border:1px dashed var(--navy); color:var(--navy);
+    border-radius:6px; padding:6px 12px; font-size:0.8rem; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600;
+  }
+  .add-row-btn:hover{background:#eef2f6;}
+
+  /* Item summary */
+  .summary{
+    margin-top:14px; padding-top:12px; border-top:1px dashed var(--paper-line);
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-items:end;
+  }
+  .summary .stat{font-size:0.8rem;}
+  .summary .stat .lbl{color:var(--ink-soft); font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;}
+  .summary .stat .val{font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:0.95rem;}
+  .summary .stat.total .val{color:var(--green); font-size:1.05rem;}
+  .summary .stat.total.match .val{color:var(--green);}
+  .summary .stat.total.mismatch .val{color:var(--red);}
+  .summary input.manual{
+    width:100%; border:1px solid var(--paper-line); border-radius:6px;
+    padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:0.9rem;
+  }
+
+  .add-item-btn, .add-group-btn{
+    background:var(--navy); color:#fff; border:none; border-radius:8px;
+    padding:10px 16px; font-size:0.85rem; font-weight:600; cursor:pointer;
+    font-family:'Inter',sans-serif;
+  }
+  .add-item-btn:hover, .add-group-btn:hover{background:var(--navy-deep);}
+  .add-group-btn{background:transparent; color:var(--navy); border:1.5px solid var(--navy); margin-bottom:6px;}
+  .add-group-btn:hover{background:#eef2f6;}
+
+  .preset-select{
+    background:transparent; color:var(--navy); border:1.5px solid var(--navy);
+    border-radius:8px; padding:10px 14px; font-size:0.85rem; font-weight:600;
+    font-family:'Inter',sans-serif; cursor:pointer; max-width:220px;
+  }
+  .preset-select:hover{background:#eef2f6;}
+  .preset-select:focus{outline:2px solid var(--navy); outline-offset:1px;}
+
+  /* Grand total */
+  .grand{
+    position:sticky; bottom:14px;
+    background:var(--navy-deep);
+    color:#fff;
+    border-radius:var(--radius);
+    padding:18px 22px;
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:14px;
+    box-shadow:0 8px 24px rgba(14,35,56,0.35);
+    margin-top:24px;
+  }
+  .grand .g-label{font-family:'Fraunces',serif; font-size:1rem; font-weight:600; opacity:0.9;}
+  .grand .g-stats{display:flex; gap:26px; flex-wrap:wrap;}
+  .grand .g-stat .lbl{font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.65;}
+  .grand .g-stat .val{font-family:'IBM Plex Mono',monospace; font-size:1.25rem; font-weight:700; color:#F1D177;}
+
+  .toolbar{display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; align-items:center;}
+  .icon-btn{
+    background:#fff; border:1px solid var(--paper-line); color:var(--ink-soft);
+    border-radius:8px; padding:9px 14px; font-size:0.82rem; cursor:pointer;
+    font-family:'Inter',sans-serif; font-weight:600;
+  }
+  .icon-btn:hover{border-color:var(--navy); color:var(--navy);}
+  .save-note{font-size:0.75rem; color:var(--ink-soft); margin-left:auto;}
+
+  .empty{
+    text-align:center; padding:40px 20px; color:var(--ink-soft);
+    border:1.5px dashed var(--paper-line); border-radius:var(--radius); background:#fff;
+  }
+
+  /* Perbandingan Stok Sistem vs Fisik */
+  .sistem-note{font-size:0.75rem; color:var(--ink-soft); margin-left:auto;}
+  .sistem-note b{color:var(--navy);}
+  .compare-wrap{
+    margin-top:14px; padding-top:12px; border-top:1px dashed var(--paper-line);
+  }
+  .compare-title{
+    font-family:'IBM Plex Mono',monospace; font-size:0.68rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--ink-soft); margin-bottom:8px; font-weight:600;
+  }
+  .compare-table{border:1px solid var(--paper-line); border-radius:8px; overflow:hidden;}
+  .compare-head, .compare-row{
+    display:grid; grid-template-columns:110px 1fr 100px 100px 100px; gap:8px;
+    padding:6px 10px; font-family:'IBM Plex Mono',monospace; font-size:0.8rem; align-items:center;
+  }
+  .compare-head{background:var(--gold-soft); color:#7A5A08; font-weight:700; font-family:'Inter',sans-serif; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em;}
+  .compare-row{border-top:1px solid var(--paper-line);}
+  .compare-row .c-label{font-family:'Inter',sans-serif; font-size:0.82rem;}
+  .compare-row.match{background:var(--green-soft);}
+  .compare-row.mismatch{background:var(--red-soft);}
+  .compare-row.extra{background:var(--gold-soft);}
+  .compare-row .c-val{text-align:right;}
+  .compare-row.match .c-selisih{color:var(--green); font-weight:700;}
+  .compare-row.mismatch .c-selisih{color:var(--red); font-weight:700;}
+  .compare-row.extra .c-selisih{color:var(--gold); font-weight:700;}
+  .extra-badge{
+    display:inline-block; margin-left:6px; padding:1px 6px; border-radius:4px;
+    background:var(--gold); color:#fff; font-family:'Inter',sans-serif;
+    font-size:0.62rem; font-weight:700; text-transform:uppercase; letter-spacing:0.03em;
+    vertical-align:middle;
+  }
+  .compare-legend{
+    display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;
+    font-family:'Inter',sans-serif; font-size:0.72rem; color:var(--ink-soft);
+  }
+  .compare-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .compare-legend .dot{width:9px; height:9px; border-radius:2px; display:inline-block;}
+  .compare-legend .dot.match{background:var(--green-soft); border:1px solid var(--green);}
+  .compare-legend .dot.mismatch{background:var(--red-soft); border:1px solid var(--red);}
+  .compare-legend .dot.extra{background:var(--gold-soft); border:1px solid var(--gold);}
+  .compare-empty-note{font-size:0.78rem; color:var(--ink-soft); font-style:italic;}
+  .rekap-block{margin-bottom:24px; padding-top:0; border-top:none;}
+  .rekap-block .compare-title{font-size:0.85rem; margin-bottom:10px;}
+  .sistem-grand{
+    background:var(--gold-soft); border:1px solid var(--gold); color:#7A5A08;
+    border-radius:var(--radius); padding:14px 20px; margin-top:14px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;
+  }
+  .sistem-grand .g-label{font-family:'Fraunces',serif; font-size:0.95rem; font-weight:600;}
+  .sistem-grand .g-stats{display:flex; gap:22px; flex-wrap:wrap;}
+  .sistem-grand .g-stat .lbl{font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; opacity:0.8;}
+  .sistem-grand .g-stat .val{font-family:'IBM Plex Mono',monospace; font-size:1.05rem; font-weight:700;}
+  .sistem-grand .g-note{width:100%; font-size:0.72rem; opacity:0.85; margin-top:2px;}
+
+  .unmatched-wrap{
+    background:var(--red-soft);
+    border:1px solid #f0c9c6;
+    border-radius:var(--radius);
+    padding:16px 20px;
+    margin-bottom:20px;
+  }
+  .unmatched-head{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    flex-wrap:wrap; margin-bottom:12px;
+  }
+  .unmatched-title{
+    font-family:'Fraunces',serif; font-weight:600; font-size:0.95rem; color:var(--red);
+  }
+  .unmatched-addall{
+    background:var(--red); color:#fff; border:none; border-radius:6px;
+    padding:7px 14px; font-size:0.78rem; cursor:pointer; font-weight:600;
+    font-family:'Inter',sans-serif; white-space:nowrap;
+  }
+  .unmatched-addall:hover{opacity:0.88;}
+  .unmatched-list{border-top:1px solid #f0c9c6;}
+  .unmatched-row{
+    display:grid; grid-template-columns:1fr 140px 150px; align-items:center; gap:14px;
+    padding:9px 0; border-bottom:1px dashed #f0c9c6; font-size:0.85rem;
+  }
+  .unmatched-row:last-child{border-bottom:none;}
+  .unmatched-row .u-name{font-weight:600; color:var(--ink);}
+  .unmatched-row .u-qty{font-family:'IBM Plex Mono',monospace; color:var(--ink-soft); text-align:right; white-space:nowrap;}
+  .unmatched-row .u-add{
+    background:#fff; color:var(--red); border:1px solid var(--red); border-radius:6px;
+    padding:5px 12px; font-size:0.75rem; cursor:pointer; font-weight:600; white-space:nowrap;
+    font-family:'Inter',sans-serif; justify-self:end;
+  }
+  .unmatched-row .u-add:hover{background:var(--red); color:#fff;}
+
+  @media (max-width:720px){
+    .meta-card{grid-template-columns:1fr;}
+    .item-top{grid-template-columns:1fr 1fr;}
+    .item-top .field:nth-child(3){grid-column:span 2;}
+    .item-top .field:nth-child(5){grid-column:span 2;}
+    .summary{grid-template-columns:1fr 1fr;}
+    .grand{flex-direction:column; align-items:flex-start;}
+    .unmatched-row{grid-template-columns:1fr; gap:4px; padding:10px 0;}
+    .unmatched-row .u-qty{text-align:left;}
+    .unmatched-row .u-add{justify-self:start;}
+  }
+
+  @media print{
+    body{background:#fff;}
+    .toolbar, .add-row-btn, .add-item-btn, .add-group-btn, .remove-btn, .del-row, .group-remove, .group-toggle{display:none !important;}
+    .tabs{display:none !important;}
+    .tab-panel{display:block !important;}
+    .grand{position:static; box-shadow:none;}
+    .item, .meta-card{break-inside:avoid;}
+    .group.collapsed .items, .group.collapsed .compare-wrap{display:block !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="masthead">
+    <div class="eyebrow">Lembar Perhitungan Fisik Barang</div>
+    <h1>Perhitungan Stok Fisik Gudang</h1>
+    <p>Hitung jumlah koli &amp; berat netto dari tumpukan barang secara otomatis, per komoditi.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="hitung" onclick="switchTab('hitung')">📋 Perhitungan</button>
+    <button class="tab-btn" data-tab="rekap" onclick="switchTab('rekap')">📊 Rekap Perbandingan</button>
+  </div>
+
+  <div id="tabHitung" class="tab-panel">
+
+  <div class="meta-card">
+    <div class="field"><label>Unit Kerja</label><input id="metaUnit" placeholder="Kantor Cabang ..."></div>
+    <div class="field"><label>Gudang</label><input id="metaGudang" placeholder="Kompleks Pergudangan ..."></div>
+    <div class="field"><label>Komoditi</label><input id="metaKomoditi" placeholder="Beras"></div>
+    <div class="field"><label>Tanggal Perhitungan</label><input id="metaTanggal" type="date"></div>
+  </div>
+
+  <div class="toolbar">
+    <select id="groupPreset" class="preset-select" onchange="handleGroupPreset(this)">
+      <option value="">+ Kelompok Komoditi</option>
+      <option value="Beras Medium">Beras Medium</option>
+      <option value="Beras Premium">Beras Premium</option>
+      <option value="Bekatul">Bekatul</option>
+      <option value="Menir">Menir</option>
+      <option value="Gula Pasir">Gula Pasir</option>
+      <option value="Minyak Goreng">Minyak Goreng</option>
+      <option value="Tepung Terigu">Tepung Terigu</option>
+      <option value="Kemasan">Kemasan</option>
+      <option value="__custom__">Lainnya (nama manual)</option>
+    </select>
+    <label class="icon-btn" style="cursor:pointer;">
+      📥 Impor Stok ERP (Excel)
+      <input type="file" id="sistemFileInput" accept=".xlsx" style="display:none" onchange="importSistemExcel(event)">
+    </label>
+    <button class="icon-btn" onclick="clearSistem()">✕ Hapus Data ERP</button>
+    <button class="icon-btn" onclick="exportExcel()">⬇ Ekspor Excel</button>
+    <button class="icon-btn" onclick="window.print()">🖨 Cetak</button>
+    <button class="icon-btn" onclick="resetAll()">↺ Reset</button>
+    <span class="save-note" id="saveNote">Tersimpan otomatis di perangkat ini</span>
+  </div>
+  <div id="sistemNote" class="sistem-note" style="margin:-10px 0 18px;"></div>
+  <div id="sistemUnmatched"></div>
+
+  <div id="groups"></div>
+
+  <div id="emptyState" class="empty" style="display:none;">
+    Belum ada kelompok komoditi. Klik <b>“+ Kelompok Komoditi”</b> untuk mulai menghitung stok (contoh: Beras Medium, Beras Premium, Gula, Minyak Goreng).
+  </div>
+
+  <div class="grand">
+    <div class="g-label">TOTAL KESELURUHAN</div>
+    <div class="g-stats">
+      <div class="g-stat"><div class="lbl">Total Koli</div><div class="val" id="grandKoli">0</div></div>
+      <div class="g-stat"><div class="lbl">Total Netto (Kg)</div><div class="val" id="grandKg">0</div></div>
+      <div class="g-stat"><div class="lbl">Setara Ton</div><div class="val" id="grandTon">0</div></div>
+    </div>
+  </div>
+
+  </div>
+
+  <div id="tabRekap" class="tab-panel" style="display:none;">
+
+  <div class="sistem-grand" id="sistemGrand" style="display:none;">
+    <div class="g-label">PERBANDINGAN DENGAN STOK ERP (EXCEL)</div>
+    <div class="g-stats">
+      <div class="g-stat"><div class="lbl">Total Stok ERP (Kg)</div><div class="val" id="sysGrandSistem">0</div></div>
+      <div class="g-stat"><div class="lbl">Total Stok Fisik (Kg)</div><div class="val" id="sysGrandFisik">0</div></div>
+      <div class="g-stat"><div class="lbl">Selisih (Kg)</div><div class="val" id="sysGrandSelisih">0</div></div>
+    </div>
+  </div>
+
+  <div id="rekapEmpty" class="empty" style="display:none;">
+    Belum ada data stok ERP yang diimpor. Buka tab <b>Perhitungan</b> lalu klik <b>“📥 Impor Stok ERP (Excel)”</b> untuk melihat rekap perbandingan semua komoditi di sini.
+  </div>
+
+  <div id="rekapGroups"></div>
+
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'gudang-stok-data-v1';
+const SISTEM_KEY = 'gudang-stok-sistem-v1';
+let state = { meta:{unit:'',gudang:'',komoditi:'',tanggal:''}, groups:[] };
+let sistemStok = { importedAt:null, fileName:'', groups:{} };
+let uid = 1;
+const newId = () => 'id'+(uid++)+'_'+Math.random().toString(36).slice(2,7);
+
+/* ---------- Stok Sistem (data pembanding dari Excel laporan stok) ---------- */
+function normKey(s){ return String(s==null?'':s).trim().toUpperCase().replace(/\s+/g,' '); }
+
+function loadSistem(){
+  try{
+    const raw = localStorage.getItem(SISTEM_KEY);
+    if(raw) sistemStok = JSON.parse(raw);
+  }catch(e){ sistemStok = { importedAt:null, fileName:'', groups:{} }; }
+}
+function saveSistem(){
+  try{ localStorage.setItem(SISTEM_KEY, JSON.stringify(sistemStok)); }
+  catch(e){ console.error('Gagal menyimpan data stok sistem', e); }
+}
+
+// Membaca file Excel laporan stok (format bertingkat: Total > Komoditi > Tumpukan, dikenali dari
+// jumlah spasi indentasi di kolom pertama). Pada baris Tumpukan, nama+kode barang ada di KOLOM B
+// (format "[KODEBARANG] NAMA BARANG ...") dan jumlah (qty) ada di KOLOM C pada baris yang sama.
+async function importSistemExcel(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf);
+    const ws = wb.worksheets[0];
+    const groups = {};
+    let currentGroup = null;
+    let currentTumpukan = null;
+    ws.eachRow((row)=>{
+      const rawLabel = row.getCell(1).value; // kolom A: label kelompok/tumpukan
+      const rawNama = row.getCell(2).value;  // kolom B: "[KODE] Nama Barang" (hanya ada di baris tumpukan)
+      const rawQty = row.getCell(3).value;   // kolom C: jumlah/qty
+      if(typeof rawLabel !== 'string') return;
+      if(!rawLabel.trim()) return;
+      const indent = rawLabel.length - rawLabel.replace(/^ +/,'').length;
+      const label = rawLabel.trim();
+      const qty = Number(rawQty)||0;
+      if(indent===0) return; // baris total keseluruhan / header, dilewati
+      if(indent===5){
+        currentGroup = { name: label, tumpukan:{}, total: qty };
+        currentTumpukan = null;
+        groups[normKey(label)] = currentGroup;
+      } else if(indent>=10 && currentGroup){
+        const slashIdx = label.indexOf('/');
+        const gudang = slashIdx>=0 ? label.slice(0,slashIdx).trim() : label;
+        const kode = slashIdx>=0 ? label.slice(slashIdx+1).trim() : '';
+        const items = [];
+        if(typeof rawNama === 'string' && rawNama.trim()){
+          const namaLabel = rawNama.trim();
+          const m = namaLabel.match(/^\[([^\]]+)\]\s*(.*)$/);
+          const sku = m ? m[1].trim() : '';
+          const nama = m ? m[2].trim() : namaLabel;
+          items.push({ sku, nama, full:namaLabel, qty });
+        }
+        const key = normKey(label);
+        if(currentGroup.tumpukan[key]){
+          // tumpukan (gudang+kode) yang sama muncul lagi di baris lain -> gabungkan
+          currentTumpukan = currentGroup.tumpukan[key];
+          currentTumpukan.qty += qty;
+          currentTumpukan.items.push(...items);
+        } else {
+          currentTumpukan = { label, qty, gudang, kode, items };
+          currentGroup.tumpukan[key] = currentTumpukan;
+        }
+      } else if(indent>=15 && currentTumpukan){
+        // fallback untuk format lain: baris barang terpisah "[KODEBARANG] NAMA BARANG ..."
+        const m = label.match(/^\[([^\]]+)\]\s*(.*)$/);
+        const sku = m ? m[1].trim() : '';
+        const nama = m ? m[2].trim() : label;
+        currentTumpukan.items.push({ sku, nama, full:label, qty });
+      }
+    });
+    if(!Object.keys(groups).length){
+      alert('Tidak ada data yang terbaca. Pastikan file merupakan laporan stok bertingkat (Komoditi > Tumpukan > Barang).');
+      event.target.value='';
+      return;
+    }
+    sistemStok = { importedAt: new Date().toISOString(), fileName: file.name, groups };
+    saveSistem();
+    render();
+    alert('Data stok ERP berhasil diimpor: ' + Object.keys(groups).length + ' kelompok komoditi dari "' + file.name + '".');
+  }catch(e){
+    console.error(e);
+    alert('Gagal membaca file Excel. Pastikan formatnya sesuai laporan stok per komoditi & tumpukan.');
+  }
+  event.target.value='';
+}
+
+// Mencari key kelompok di sistemStok.groups yang cocok dengan nama kelompok fisik.
+// Dicoba exact match dulu; jika tidak ada, dicoba pencocokan "salah satu mengandung yang lain"
+// (misal kelompok fisik "Gula Pasir" tetap cocok dengan kelompok sistem "GULA").
+function findSysGroupKey(gName){
+  if(!sistemStok.groups) return null;
+  const gKey = normKey(gName);
+  if(!gKey) return null;
+  if(sistemStok.groups[gKey]) return gKey;
+  let best = null;
+  Object.keys(sistemStok.groups).forEach(k=>{
+    if(k.length<3 || gKey.length<3) return;
+    if(gKey.includes(k) || k.includes(gKey)){
+      if(!best || k.length>best.length) best = k;
+    }
+  });
+  return best;
+}
+function findSysGroup(gName){
+  const k = findSysGroupKey(gName);
+  return k ? sistemStok.groups[k] : null;
+}
+
+// Kelompok yang ada di data stok sistem (Excel) tapi belum punya kelompok fisik yang cocok.
+function getUnmatchedSistemGroups(){
+  if(!sistemStok.groups) return [];
+  const matchedKeys = new Set();
+  state.groups.forEach(g=>{
+    const k = findSysGroupKey(g.name);
+    if(k) matchedKeys.add(k);
+  });
+  return Object.entries(sistemStok.groups)
+    .filter(([k])=>!matchedKeys.has(k))
+    .map(([k,v])=>({key:k, group:v}))
+    .sort((a,b)=> (b.group.total||0) - (a.group.total||0));
+}
+
+// Membuat kelompok fisik baru dari sebuah kelompok sistem, otomatis mengisi Gudang/Kode/Nama
+// untuk setiap tumpukan sehingga tinggal diisi hitungan fisiknya (P x L x T x Qty).
+function addGroupFromSistem(key){
+  const sysGroup = sistemStok.groups ? sistemStok.groups[key] : null;
+  if(!sysGroup) return;
+  const tumpukanList = Object.values(sysGroup.tumpukan||{});
+  const items = tumpukanList.map(t=>({
+    id:newId(),
+    gd:t.gudang||'',
+    no:t.kode||'',
+    nama:(t.items && t.items[0] && (t.items[0].full||t.items[0].nama)) || '',
+    km:0,
+    rows:[emptyRow()],
+    tidakUtuh:0,
+    isiPack:1
+  }));
+  state.groups.push({ id:newId(), name:sysGroup.name||key, items: items.length?items:[emptyItem()] });
+  render();
+}
+
+function addAllUnmatchedSistemGroups(){
+  const unmatched = getUnmatchedSistemGroups();
+  if(!unmatched.length) return;
+  if(!confirm(`Buat ${unmatched.length} kelompok baru sekaligus dari data ERP yang belum dipetakan?`)) return;
+  unmatched.forEach(({key})=>{
+    const sysGroup = sistemStok.groups[key];
+    const tumpukanList = Object.values(sysGroup.tumpukan||{});
+    const items = tumpukanList.map(t=>({
+      id:newId(), gd:t.gudang||'', no:t.kode||'',
+      nama:(t.items && t.items[0] && (t.items[0].full||t.items[0].nama)) || '',
+      km:0, rows:[emptyRow()], tidakUtuh:0, isiPack:1
+    }));
+    state.groups.push({ id:newId(), name:sysGroup.name||key, items: items.length?items:[emptyItem()] });
+  });
+  render();
+}
+
+function renderUnmatchedPanel(){
+  const wrap = document.getElementById('sistemUnmatched');
+  if(!wrap) return;
+  const unmatched = getUnmatchedSistemGroups();
+  if(!unmatched.length){ wrap.innerHTML=''; return; }
+  const rows = unmatched.map(({key,group})=>`
+    <div class="unmatched-row">
+      <span class="u-name">${group.name||key}</span>
+      <span class="u-qty">${fmt(group.total||0)} kg dari ERP</span>
+      <button class="u-add" data-addsys="${key}">+ Buat Kelompok</button>
+    </div>
+  `).join('');
+  wrap.innerHTML = `
+    <div class="unmatched-wrap">
+      <div class="unmatched-head">
+        <span class="unmatched-title">⚠ ${unmatched.length} kelompok dari file Excel belum ada di perhitungan fisik</span>
+        <button class="unmatched-addall" id="btnAddAllUnmatched">+ Buat Semua Sekaligus</button>
+      </div>
+      <div class="unmatched-list">${rows}</div>
+    </div>
+  `;
+  wrap.querySelectorAll('[data-addsys]').forEach(el=>{
+    el.onclick = ()=> addGroupFromSistem(el.dataset.addsys);
+  });
+  document.getElementById('btnAddAllUnmatched').onclick = addAllUnmatchedSistemGroups;
+}
+
+function clearSistem(){
+  if(!confirm('Hapus data stok ERP (pembanding) yang sudah diimpor?')) return;
+  sistemStok = { importedAt:null, fileName:'', groups:{} };
+  saveSistem();
+  render();
+}
+
+function updateSistemNote(){
+  const note = document.getElementById('sistemNote');
+  if(!note) return;
+  if(sistemStok.importedAt){
+    const tgl = new Date(sistemStok.importedAt).toLocaleString('id-ID');
+    note.innerHTML = 'Data ERP: <b>' + Object.keys(sistemStok.groups).length + ' komoditi</b> dari "' + (sistemStok.fileName||'-') + '" · diimpor ' + tgl;
+  } else {
+    note.textContent = 'Belum ada data stok ERP yang diimpor untuk pembanding.';
+  }
+}
+
+// Menghasilkan daftar saran Gudang / Kode / Nama Barang dari data stok sistem yang sudah
+// diimpor, dibatasi pada kelompok komoditi yang sedang diisi, dan disaring lagi sesuai
+// Gudang/Kode yang sudah diketik agar saran makin spesifik.
+function sistemSuggestFor(sysGroup, gdVal, noVal){
+  const out = { gudangs: [], kodes: [], namas: [] };
+  if(!sysGroup) return out;
+  const tumpukanList = Object.values(sysGroup.tumpukan || {});
+  const gdNorm = normKey(gdVal);
+  const noNorm = normKey(noVal);
+
+  out.gudangs = [...new Set(tumpukanList.map(t=>t.gudang).filter(Boolean))].sort();
+
+  let scopedByGd = gdNorm ? tumpukanList.filter(t=>normKey(t.gudang)===gdNorm) : tumpukanList;
+  if(!scopedByGd.length) scopedByGd = tumpukanList; // fallback jika gudang belum cocok apa pun
+  out.kodes = [...new Set(scopedByGd.map(t=>t.kode).filter(Boolean))].sort();
+
+  let scopedByNo = noNorm ? scopedByGd.filter(t=>normKey(t.kode)===noNorm) : scopedByGd;
+  if(!scopedByNo.length) scopedByNo = scopedByGd;
+  const namaSet = new Set();
+  scopedByNo.forEach(t=> (t.items||[]).forEach(i=> { const n = i.full||i.nama; if(n) namaSet.add(n); }));
+  out.namas = [...namaSet].sort();
+  return out;
+}
+
+// Mencari entri tumpukan (gudang+kode) yang cocok, untuk auto-isi nama barang saat Gudang/Kode dipilih.
+function sistemFindTumpukan(sysGroup, gdVal, noVal){
+  if(!sysGroup) return null;
+  const gdNorm = normKey(gdVal), noNorm = normKey(noVal);
+  return Object.values(sysGroup.tumpukan||{}).find(t=>normKey(t.gudang)===gdNorm && normKey(t.kode)===noNorm) || null;
+}
+
+// Fallback: cari tumpukan gudang+kode di SEMUA kelompok sistem, dipakai bila kelompok fisik
+// belum cocok/dikenali tapi kombinasi Gudang+Kode sudah ada di data Excel.
+function sistemFindTumpukanAnyGroup(gdVal, noVal){
+  if(!sistemStok.groups) return null;
+  const gdNorm = normKey(gdVal), noNorm = normKey(noVal);
+  if(!gdNorm && !noNorm) return null;
+  for(const sysGroup of Object.values(sistemStok.groups)){
+    const t = Object.values(sysGroup.tumpukan||{}).find(t=>normKey(t.gudang)===gdNorm && normKey(t.kode)===noNorm);
+    if(t) return t;
+  }
+  return null;
+}
+
+// Auto-isi Nama Barang sebuah item dari data stok sistem (Excel) berdasarkan Gudang+Kode-nya,
+// dicoba dulu di kelompok yang sesuai, lalu fallback ke seluruh kelompok sistem.
+// Tidak menimpa nama yang sudah pernah diisi (manual atau otomatis sebelumnya).
+function autoFillNamaFromSistem(it, sysGroup){
+  if(!it || it.nama || (!it.gd && !it.no)) return false;
+  let t = sistemFindTumpukan(sysGroup, it.gd, it.no);
+  if(!t) t = sistemFindTumpukanAnyGroup(it.gd, it.no);
+  if(t && t.items && t.items.length){
+    it.nama = t.items[0].full || t.items[0].nama;
+    return true;
+  }
+  return false;
+}
+
+// Mencari tumpukan berdasarkan nama barang, untuk auto-isi Gudang & Kode saat Nama Barang dipilih.
+function sistemFindByNama(sysGroup, namaVal){
+  if(!sysGroup) return null;
+  const namaNorm = normKey(namaVal);
+  for(const t of Object.values(sysGroup.tumpukan||{})){
+    const match = (t.items||[]).find(i=>normKey(i.full)===namaNorm || normKey(i.nama)===namaNorm);
+    if(match) return { tumpukan:t, item:match };
+  }
+  return null;
+}
+
+function emptyRow(){ return {p:0,l:0,t:0,qty:0,tambah:0,kurang:0}; }
+function emptyItem(){ return { id:newId(), gd:'', no:'', nama:'', km:0, rows:[emptyRow()], tidakUtuh:0, isiPack:1 }; }
+function emptyGroup(name){ return { id:newId(), name:(name||'Kelompok Baru'), items:[emptyItem()], collapsed:false }; }
+
+function fmt(n){
+  if(isNaN(n)) return '0';
+  return Number(n).toLocaleString('id-ID', {maximumFractionDigits:2});
+}
+
+function calcRow(r, isiPack){
+  const ip = Number(isiPack)||1;
+  return ((Number(r.p)||0) * (Number(r.l)||0) * (Number(r.t)||0) * (Number(r.qty)||0) + (Number(r.tambah)||0) - (Number(r.kurang)||0)) * ip;
+}
+function calcItem(it){
+  const isiPack = Number(it.isiPack)||1;
+  const koliUtuh = it.rows.reduce((s,r)=>s+calcRow(r,isiPack),0);
+  const nettoUtuh = koliUtuh * (Number(it.km)||0);
+  const tidakUtuh = Number(it.tidakUtuh)||0;
+  const totalNetto = nettoUtuh + tidakUtuh;
+  return {koliUtuh, nettoUtuh, tidakUtuh, totalNetto};
+}
+function calcGroup(g){
+  let koli=0, netto=0;
+  g.items.forEach(it=>{ const c = calcItem(it); koli += c.koliUtuh; netto += c.totalNetto; });
+  return {koli, netto};
+}
+
+function render(){
+  document.getElementById('metaUnit').value = state.meta.unit;
+  document.getElementById('metaGudang').value = state.meta.gudang;
+  document.getElementById('metaKomoditi').value = state.meta.komoditi || '';
+  document.getElementById('metaTanggal').value = state.meta.tanggal;
+
+  const container = document.getElementById('groups');
+  container.innerHTML='';
+  document.getElementById('emptyState').style.display = state.groups.length ? 'none':'block';
+
+  let grandKoli=0, grandNetto=0;
+  let grandSistemTotal = 0;
+  const matchedSistemKeys = new Set();
+  const rekapBlocks = [];
+
+  state.groups.forEach(g=>{
+    const gTot = calcGroup(g);
+    grandKoli += gTot.koli; grandNetto += gTot.netto;
+
+    // ---- Perbandingan dengan stok sistem (jika ada data yang diimpor) ----
+    const gKey = findSysGroupKey(g.name);
+    const sysGroup = gKey ? sistemStok.groups[gKey] : null;
+    let compareHtml = '';
+    if(sysGroup){
+      matchedSistemKeys.add(gKey);
+      const fisikTumpukan = {};
+      g.items.forEach(it=>{
+        const c = calcItem(it);
+        const label = `${(it.gd||'').trim()}/${(it.no||'').trim()}`;
+        const key = normKey(label);
+        if(!fisikTumpukan[key]) fisikTumpukan[key] = {label, netto:0, namas:new Set()};
+        fisikTumpukan[key].netto += c.totalNetto;
+        if(it.nama) fisikTumpukan[key].namas.add(it.nama);
+      });
+      const allKeys = new Set([...Object.keys(sysGroup.tumpukan), ...Object.keys(fisikTumpukan)]);
+      const rows = [...allKeys].map(k=>{
+        const sys = sysGroup.tumpukan[k];
+        const fis = fisikTumpukan[k];
+        const sysQty = sys ? sys.qty : 0;
+        const fisQty = fis ? fis.netto : 0;
+        // Nama produk: utamakan nama lengkap (dengan kode SKU) dari data stok sistem (Excel); jika tidak ada, pakai nama hasil hitung fisik.
+        const sysNama = sys && sys.items && sys.items.length ? sys.items.map(i=>i.full||i.nama).join(' / ') : '';
+        const fisNama = fis && fis.namas && fis.namas.size ? [...fis.namas].join(' / ') : '';
+        const nama = sysNama || fisNama || '-';
+        // Tumpukan yang ada di hasil hitung fisik tapi sama sekali tidak ada di data sistem
+        // = penambahan stok di luar sistem, bukan selisih kekurangan/kelebihan biasa.
+        const isExtra = !sys && !!fis;
+        return { label:(sys&&sys.label)||(fis&&fis.label)||k, nama, sysQty, fisQty, selisih: fisQty - sysQty, isExtra };
+      }).sort((a,b)=>a.label.localeCompare(b.label));
+
+      const anyExtra = rows.some(r=>r.isExtra);
+
+      const rowsHtml = rows.map(r=>{
+        const cls = r.isExtra ? 'extra' : (Math.abs(r.selisih) < 0.01 ? 'match' : 'mismatch');
+        const badge = r.isExtra ? '<span class="extra-badge">Tambahan luar ERP</span>' : '';
+        return `
+          <div class="compare-row ${cls}">
+            <div class="c-label">${r.label}</div>
+            <div class="c-label">${r.nama}${badge}</div>
+            <div class="c-val">${fmt(r.sysQty)}</div>
+            <div class="c-val">${fmt(r.fisQty)}</div>
+            <div class="c-val c-selisih">${fmt(r.selisih)}</div>
+          </div>`;
+      }).join('');
+
+      const legendHtml = anyExtra ? `
+            <div class="compare-legend">
+              <span><span class="dot mismatch"></span>Selisih vs ERP</span>
+              <span><span class="dot extra"></span>Tambahan luar ERP (belum tercatat di ERP)</span>
+            </div>` : '';
+
+      compareHtml = `
+        <div class="compare-wrap rekap-block">
+          <div class="compare-title">PERBANDINGAN — ${g.name.toUpperCase()}</div>
+          <div class="compare-table">
+            <div class="compare-head"><div>Tumpukan (GD/Kode)</div><div>Nama Barang</div><div class="c-val">ERP (Kg)</div><div class="c-val">Fisik (Kg)</div><div class="c-val">Selisih (Kg)</div></div>
+            ${rowsHtml}
+            <div class="compare-row" style="font-weight:700;border-top:2px solid var(--paper-line);">
+              <div class="c-label">TOTAL ${g.name.toUpperCase()}</div>
+              <div class="c-label"></div>
+              <div class="c-val">${fmt(sysGroup.total)}</div>
+              <div class="c-val">${fmt(gTot.netto)}</div>
+              <div class="c-val">${fmt(gTot.netto - sysGroup.total)}</div>
+            </div>
+          </div>
+          ${legendHtml}
+        </div>`;
+      rekapBlocks.push(compareHtml);
+    }
+
+    const gEl = document.createElement('div');
+    gEl.className='group' + (g.collapsed ? ' collapsed' : '');
+    gEl.innerHTML = `
+      <div class="group-head">
+        <button class="group-toggle" onclick="toggleGroup('${g.id}')" title="${g.collapsed?'Tampilkan kelompok ini':'Minimize kelompok ini'}"><span class="chevron">▾</span>${g.collapsed?'Tampilkan':'Minimize'}</button>
+        <input class="group-name" data-group="${g.id}" value="${g.name}">
+        <div class="group-total">Subtotal: <b>${fmt(gTot.koli)}</b> koli · <b>${fmt(gTot.netto)}</b> kg${sysGroup? ` · ERP: <b>${fmt(sysGroup.total)}</b> kg · Selisih: <b>${fmt(gTot.netto - sysGroup.total)}</b> kg`:''}</div>
+        <button class="group-remove" data-removegroup="${g.id}">hapus kelompok</button>
+      </div>
+      <div class="items" data-items="${g.id}"></div>
+      <button class="add-item-btn" data-additem="${g.id}">+ Tambah Barang</button>
+    `;
+    container.appendChild(gEl);
+
+    const itemsEl = gEl.querySelector(`[data-items="${g.id}"]`);
+    g.items.forEach(it=>{
+      autoFillNamaFromSistem(it, sysGroup);
+      const c = calcItem(it);
+      const sugg = sistemSuggestFor(sysGroup, it.gd, it.no);
+      const dlGdOpts = sugg.gudangs.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}">`).join('');
+      const dlNoOpts = sugg.kodes.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}">`).join('');
+      const dlNamaOpts = sugg.namas.map(v=>`<option value="${String(v).replace(/"/g,'&quot;')}">`).join('');
+      const itemEl = document.createElement('div');
+      itemEl.className='item';
+      itemEl.innerHTML = `
+        <datalist id="dl_gd_${it.id}">${dlGdOpts}</datalist>
+        <datalist id="dl_no_${it.id}">${dlNoOpts}</datalist>
+        <datalist id="dl_nama_${it.id}">${dlNamaOpts}</datalist>
+        <div class="item-top">
+          <div class="field"><label>Gudang</label><input id="inp_${it.id}_gd" list="dl_gd_${it.id}" data-field="gd" data-item="${it.id}" value="${it.gd}" placeholder="GD 01"></div>
+          <div class="field"><label>No / Kode</label><input id="inp_${it.id}_no" list="dl_no_${it.id}" data-field="no" data-item="${it.id}" value="${it.no}" placeholder="A01.1.1"></div>
+          <div class="field"><label>Nama Barang</label><input id="inp_${it.id}_nama" list="dl_nama_${it.id}" data-field="nama" data-item="${it.id}" value="${it.nama}" placeholder="Beras Medium 5kg ..."></div>
+          <div class="field"><label>KM (Kg/kemasan)</label><input id="inp_${it.id}_km" type="text" inputmode="decimal" data-field="km" data-item="${it.id}" value="${it.km}"></div>
+          <div class="field"><label>Isi / Pack (Koli)</label><input id="inp_${it.id}_isiPack" type="text" inputmode="numeric" data-field="isiPack" data-item="${it.id}" value="${it.isiPack==null?1:it.isiPack}" title="Isi jika 1 pack berisi beberapa koli, misal 1 pack = 20 koli"></div>
+          <button class="remove-btn" data-removeitem="${it.id}" data-group="${g.id}">Hapus</button>
+        </div>
+        <div class="ledger-labels">
+          <span style="width:56px;">Baris</span><span style="width:14px;"></span>
+          <span style="width:56px;">Kolom</span><span style="width:14px;"></span>
+          <span style="width:56px;">Lapis</span><span style="width:14px;"></span>
+          <span style="width:56px;">Susun</span><span style="width:14px;"></span>
+          <span style="width:56px;">Tambah</span><span style="width:14px;"></span>
+          <span style="width:56px;">Kurang</span>
+        </div>
+        <div class="ledger" data-rows="${it.id}"></div>
+        <button class="add-row-btn" data-addrow="${it.id}">+ Tambah Baris Tumpukan</button>
+
+        <div class="summary">
+          <div class="stat"><div class="lbl">Jumlah Utuh (Koli)${(Number(it.isiPack)||1)!==1 ? ` <span style="font-weight:400;">(×${Number(it.isiPack)} isi/pack)</span>`:''}</div><div class="val">${fmt(c.koliUtuh)}</div></div>
+          <div class="stat"><div class="lbl">Netto Utuh (Kg)</div><div class="val">${fmt(c.nettoUtuh)}</div></div>
+          <div class="stat"><div class="lbl">Tidak Utuh (Kg)</div>
+            <input id="inp_${it.id}_tidakUtuh" class="manual" type="text" inputmode="decimal" data-field="tidakUtuh" data-item="${it.id}" value="${it.tidakUtuh}">
+          </div>
+          <div class="stat total"><div class="lbl">Total Netto (Kg)</div><div class="val">${fmt(c.totalNetto)}</div></div>
+          ${(()=>{
+            const tSys = sistemFindTumpukan(sysGroup, it.gd, it.no);
+            if(!tSys) return '';
+            const selisih = c.totalNetto - tSys.qty;
+            const cls = Math.abs(selisih) < 0.01 ? 'match' : 'mismatch';
+            return `
+          <div class="stat total"><div class="lbl">Stok ERP (Kg)</div><div class="val">${fmt(tSys.qty)}</div></div>
+          <div class="stat total ${cls}"><div class="lbl">Selisih vs ERP (Kg)</div><div class="val">${fmt(selisih)}</div></div>`;
+          })()}
+        </div>
+      `;
+      itemsEl.appendChild(itemEl);
+
+      const rowsEl = itemEl.querySelector(`[data-rows="${it.id}"]`);
+      it.rows.forEach((r,ridx)=>{
+        const koli = calcRow(r, it.isiPack);
+        const rowEl = document.createElement('div');
+        rowEl.className='ledger-row';
+        rowEl.innerHTML = `
+          <input id="inp_${it.id}_${ridx}_p" type="text" inputmode="decimal" data-row-field="p" data-item="${it.id}" data-row="${ridx}" value="${r.p}">
+          <span class="op">×</span>
+          <input id="inp_${it.id}_${ridx}_l" type="text" inputmode="decimal" data-row-field="l" data-item="${it.id}" data-row="${ridx}" value="${r.l}">
+          <span class="op">×</span>
+          <input id="inp_${it.id}_${ridx}_t" type="text" inputmode="decimal" data-row-field="t" data-item="${it.id}" data-row="${ridx}" value="${r.t}">
+          <span class="op">×</span>
+          <input id="inp_${it.id}_${ridx}_qty" type="text" inputmode="decimal" data-row-field="qty" data-item="${it.id}" data-row="${ridx}" value="${r.qty}">
+          <span class="op">+</span>
+          <input id="inp_${it.id}_${ridx}_tambah" type="text" inputmode="decimal" data-row-field="tambah" data-item="${it.id}" data-row="${ridx}" value="${r.tambah}">
+          <span class="op">−</span>
+          <input id="inp_${it.id}_${ridx}_kurang" type="text" inputmode="decimal" data-row-field="kurang" data-item="${it.id}" data-row="${ridx}" value="${r.kurang}">
+          <span class="eq">=</span>
+          <div class="result-badge">${fmt(koli)}</div>
+          <button class="del-row" data-delrow="${ridx}" data-item="${it.id}" title="Hapus baris">✕</button>
+        `;
+        rowsEl.appendChild(rowEl);
+      });
+    });
+  });
+
+  document.getElementById('grandKoli').textContent = fmt(grandKoli);
+  document.getElementById('grandKg').textContent = fmt(grandNetto);
+  document.getElementById('grandTon').textContent = fmt(grandNetto/1000);
+
+  // Total stok sistem = jumlah seluruh komoditi yang ada di file Excel yang diimpor
+  const sistemGroupList = sistemStok.groups ? Object.values(sistemStok.groups) : [];
+  grandSistemTotal = sistemGroupList.reduce((s,g)=>s+(Number(g.total)||0),0);
+  const sistemGrandEl = document.getElementById('sistemGrand');
+  if(sistemGroupList.length){
+    sistemGrandEl.style.display = 'flex';
+    document.getElementById('sysGrandSistem').textContent = fmt(grandSistemTotal);
+    document.getElementById('sysGrandFisik').textContent = fmt(grandNetto);
+    document.getElementById('sysGrandSelisih').textContent = fmt(grandNetto - grandSistemTotal);
+    let noteEl = document.getElementById('sysGrandNote');
+    if(!noteEl){
+      noteEl = document.createElement('div');
+      noteEl.id = 'sysGrandNote';
+      noteEl.className = 'g-note';
+      sistemGrandEl.appendChild(noteEl);
+    }
+    const unmatchedNow = getUnmatchedSistemGroups();
+    const unmatchedTotal = unmatchedNow.reduce((s,u)=>s+(u.group.total||0),0);
+    noteEl.textContent = unmatchedNow.length
+      ? `Termasuk ${fmt(unmatchedTotal)} kg dari ${unmatchedNow.length} kelompok ERP yang belum dipetakan ke kelompok fisik (lihat peringatan di atas kelompok).`
+      : 'Semua kelompok dari data ERP sudah terpetakan ke kelompok fisik.';
+  } else {
+    sistemGrandEl.style.display = 'none';
+  }
+  updateSistemNote();
+  renderUnmatchedPanel();
+
+  const rekapGroupsEl = document.getElementById('rekapGroups');
+  const rekapEmptyEl = document.getElementById('rekapEmpty');
+  if(rekapBlocks.length){
+    rekapGroupsEl.innerHTML = rekapBlocks.join('');
+    rekapEmptyEl.style.display = 'none';
+  } else {
+    rekapGroupsEl.innerHTML = '';
+    rekapEmptyEl.style.display = 'block';
+  }
+
+  attachEvents();
+  save();
+}
+
+function findItem(id){
+  for(const g of state.groups){
+    const it = g.items.find(i=>i.id===id);
+    if(it) return it;
+  }
+  return null;
+}
+
+function findGroupOfItem(itemId){
+  for(const g of state.groups){
+    if(g.items.some(i=>i.id===itemId)) return g;
+  }
+  return null;
+}
+
+function attachEvents(){
+  document.querySelectorAll('[data-group]').forEach(el=>{
+    if(el.tagName==='INPUT'){
+      el.oninput = ()=>{ const g = state.groups.find(x=>x.id===el.dataset.group); g.name = el.value; save(); refreshTotalsOnly(); };
+    }
+  });
+  document.querySelectorAll('[data-removegroup]').forEach(el=>{
+    el.onclick = ()=>{ state.groups = state.groups.filter(g=>g.id!==el.dataset.removegroup); render(); };
+  });
+  document.querySelectorAll('[data-additem]').forEach(el=>{
+    el.onclick = ()=>{ const g = state.groups.find(x=>x.id===el.dataset.additem); g.items.push(emptyItem()); render(); };
+  });
+  document.querySelectorAll('[data-removeitem]').forEach(el=>{
+    el.onclick = ()=>{ const g = state.groups.find(x=>x.id===el.dataset.group); g.items = g.items.filter(i=>i.id!==el.dataset.removeitem); render(); };
+  });
+  document.querySelectorAll('[data-addrow]').forEach(el=>{
+    el.onclick = ()=>{ const it = findItem(el.dataset.addrow); it.rows.push(emptyRow()); render(); };
+  });
+  document.querySelectorAll('[data-delrow]').forEach(el=>{
+    el.onclick = ()=>{ const it = findItem(el.dataset.item); if(it.rows.length>1){ it.rows.splice(Number(el.dataset.delrow),1); render(); } };
+  });
+  document.querySelectorAll('[data-field]').forEach(el=>{
+    el.oninput = ()=>{
+      const it = findItem(el.dataset.item);
+      const f = el.dataset.field;
+      it[f] = (f==='km' || f==='tidakUtuh' || f==='isiPack') ? Number(el.value) : el.value;
+      renderPreservingFocus();
+    };
+  });
+  document.querySelectorAll('[data-row-field]').forEach(el=>{
+    el.oninput = ()=>{
+      const it = findItem(el.dataset.item);
+      it.rows[Number(el.dataset.row)][el.dataset.rowField] = Number(el.value);
+      renderPreservingFocus();
+    };
+  });
+  document.getElementById('metaUnit').oninput = e=>{ state.meta.unit = e.target.value; save(); };
+  document.getElementById('metaGudang').oninput = e=>{ state.meta.gudang = e.target.value; save(); };
+  document.getElementById('metaKomoditi').oninput = e=>{ state.meta.komoditi = e.target.value; save(); };
+  document.getElementById('metaTanggal').oninput = e=>{ state.meta.tanggal = e.target.value; save(); };
+
+  // Auto-isi dari data Stok Sistem (Excel) saat Nama/Kode dipilih/cocok
+  document.querySelectorAll('input[data-field="nama"]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const it = findItem(el.dataset.item);
+      const g = findGroupOfItem(el.dataset.item);
+      const sysGroup = g ? findSysGroup(g.name) : null;
+      const found = sistemFindByNama(sysGroup, el.value);
+      if(found){
+        if(!it.gd) it.gd = found.tumpukan.gudang;
+        if(!it.no) it.no = found.tumpukan.kode;
+        renderPreservingFocus();
+      }
+    });
+  });
+  document.querySelectorAll('input[data-field="no"]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const it = findItem(el.dataset.item);
+      const g = findGroupOfItem(el.dataset.item);
+      const sysGroup = g ? findSysGroup(g.name) : null;
+      const filled = autoFillNamaFromSistem(it, sysGroup);
+      if(filled) renderPreservingFocus();
+    });
+  });
+  document.querySelectorAll('input[data-field="gd"]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const it = findItem(el.dataset.item);
+      const g = findGroupOfItem(el.dataset.item);
+      const sysGroup = g ? findSysGroup(g.name) : null;
+      const filled = autoFillNamaFromSistem(it, sysGroup);
+      renderPreservingFocus();
+    });
+  });
+}
+
+// Lightweight re-render skip for group name typing (avoid focus loss)
+function refreshTotalsOnly(){}
+
+function renderPreservingFocus(){
+  const active = document.activeElement;
+  let id = null, start = null, end = null;
+  if(active && active.id && active.id.startsWith('inp_')){
+    id = active.id;
+    start = active.selectionStart;
+    end = active.selectionEnd;
+  }
+  render();
+  if(id){
+    const el = document.getElementById(id);
+    if(el){
+      el.focus();
+      if(typeof start === 'number' && el.type !== 'number'){
+        try{ el.setSelectionRange(start,end); }catch(e){}
+      }
+    }
+  }
+}
+
+async function exportExcel(){
+  if(!state.groups.length){
+    alert('Belum ada data untuk diekspor. Tambahkan kelompok komoditi terlebih dahulu.');
+    return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Perhitungan Stok', {views:[{showGridLines:false}]});
+
+  // Column layout: A GD | B No | C Nama | D KM | E..Q kalkulasi (13 kolom) | R KOLI | S NETTO
+  ws.columns = [
+    {width:10},{width:11},{width:34},{width:7},          // A-D
+    {width:6},{width:2.5},{width:6},{width:2.5},{width:6},{width:2.5},{width:6}, // E-K (P x L x T x Susun)
+    {width:2.5},{width:7},{width:2.5},{width:7},{width:2.5}, // L-P (+ Tambah - Kurang =)
+    {width:11},{width:12},{width:13}                      // Q Hasil, R KOLI, S NETTO
+  ];
+  const LAST_COL = 19; // column S
+  const thin = {style:'thin', color:{argb:'FF999999'}};
+  const allBorders = {top:thin,left:thin,bottom:thin,right:thin};
+  const numFmt = '#,##0.00;(#,##0.00);"-"';
+
+  function mergeRow(r1,c1,r2,c2){ ws.mergeCells(r1,c1,r2,c2); }
+  function setCell(row,col,value,opts={}){
+    const cell = ws.getCell(row,col);
+    cell.value = value;
+    cell.font = Object.assign({name:'Arial', size:9}, opts.font||{});
+    cell.alignment = Object.assign({vertical:'middle', horizontal:opts.align||'center', wrapText:!!opts.wrap}, opts.alignment||{});
+    if(opts.border !== false) cell.border = allBorders;
+    if(opts.fill) cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:opts.fill}};
+    if(opts.numFmt) cell.numFmt = opts.numFmt;
+    return cell;
+  }
+
+  let row = 1;
+
+  // Title
+  mergeRow(row,1,row,LAST_COL);
+  setCell(row,1,'LEMBAR  :  PERHITUNGAN  FISIK  BARANG  DI GUDANG',{font:{bold:true,size:13},border:false});
+  ws.getRow(row).height = 22;
+  row += 2;
+
+  // Meta info
+  const metaRows = [
+    ['UNIT KERJA', state.meta.unit || '-'],
+    ['GUDANG', state.meta.gudang || '-'],
+    ['KOMODITI', state.meta.komoditi || '-']
+  ];
+  metaRows.forEach(([label,val])=>{
+    setCell(row,1,label,{font:{bold:true},align:'left',border:false});
+    setCell(row,2,':',{align:'center',border:false});
+    mergeRow(row,3,row,LAST_COL);
+    setCell(row,3,val,{align:'left',border:false});
+    row++;
+  });
+  row++;
+
+  // Header table (3 rows)
+  const headerFill = 'FFBDD7EE';
+  const h1 = row, h2 = row+1, h3 = row+2;
+
+  mergeRow(h1,1,h1,3);
+  setCell(h1,1,'TUMPUKAN / STAPEL BARANG',{font:{bold:true},fill:headerFill});
+  mergeRow(h1,4,h1,LAST_COL);
+  setCell(h1,4,'RINCIAN PERHITUNGAN ISI BARANG PER-TUMPUKAN',{font:{bold:true},fill:headerFill});
+
+  mergeRow(h2,1,h3,1);
+  setCell(h2,1,'UNIT\nGD',{font:{bold:true},fill:headerFill,wrap:true,alignment:{vertical:'middle',horizontal:'center',wrapText:true}});
+  mergeRow(h2,2,h3,2);
+  setCell(h2,2,'NO',{font:{bold:true},fill:headerFill});
+  mergeRow(h2,3,h3,3);
+  setCell(h2,3,'JENIS KOMODITAS',{font:{bold:true},fill:headerFill});
+  mergeRow(h2,4,h3,4);
+  setCell(h2,4,'KM (Kg)',{font:{bold:true},fill:headerFill,wrap:true});
+  mergeRow(h2,5,h2,17);
+  setCell(h2,5,'PERKALIAN TUMPUKAN BARANG',{font:{bold:true},fill:headerFill});
+  mergeRow(h2,18,h2,19);
+  setCell(h2,18,'JUMLAH',{font:{bold:true},fill:headerFill});
+
+  for(let c=5;c<=17;c++) setCell(h3,c,'',{fill:headerFill});
+  setCell(h3,18,'KOLI',{font:{bold:true},fill:headerFill});
+  setCell(h3,19,'NETTO',{font:{bold:true},fill:headerFill});
+
+  row = h3 + 1;
+
+  const groupTotalCells = []; // {name, cellRef}
+
+  state.groups.forEach(g=>{
+    // Group label row
+    mergeRow(row,1,row,LAST_COL);
+    const gCell = setCell(row,1,g.name,{font:{bold:true,underline:true}, align:'left', border:false});
+    row++;
+
+    const itemTotalRefs = []; // NETTO cell refs for this group's items
+
+    g.items.forEach(it=>{
+      const nRows = it.rows.length;
+      const itemStart = row;
+      const itemEnd = row + nRows + 2; // + Jumlah utuh, Jumlah tidak utuh, TOTAL
+
+      mergeRow(itemStart,1,itemEnd,1);
+      setCell(itemStart,1,it.gd||'',{align:'center', wrap:true});
+      mergeRow(itemStart,2,itemEnd,2);
+      setCell(itemStart,2,it.no||'',{align:'center', wrap:true});
+      mergeRow(itemStart,3,itemEnd,3);
+      const isiPack = Number(it.isiPack)||1;
+      const namaText = (it.nama||'') + (isiPack!==1 ? `\n(1 pack = ${isiPack} koli)` : '');
+      setCell(itemStart,3,namaText,{align:'left', wrap:true});
+
+      const qCells = [];
+      it.rows.forEach((r,idx)=>{
+        const rr = itemStart + idx;
+        if(idx===0){
+          setCell(rr,4,Number(it.km)||0,{align:'center'});
+        } else {
+          setCell(rr,4,'',{});
+        }
+        setCell(rr,5,Number(r.p)||0,{align:'center'});
+        setCell(rr,6,'x',{align:'center'});
+        setCell(rr,7,Number(r.l)||0,{align:'center'});
+        setCell(rr,8,'x',{align:'center'});
+        setCell(rr,9,Number(r.t)||0,{align:'center'});
+        setCell(rr,10,'x',{align:'center'});
+        setCell(rr,11,Number(r.qty)||0,{align:'center'});
+        setCell(rr,12,'+',{align:'center'});
+        setCell(rr,13,Number(r.tambah)||0,{align:'center'});
+        setCell(rr,14,'-',{align:'center'});
+        setCell(rr,15,Number(r.kurang)||0,{align:'center'});
+        setCell(rr,16,'=',{align:'center'});
+        const packSuffix = isiPack!==1 ? `*${isiPack}` : '';
+        const qCell = setCell(rr,17,{formula:`(E${rr}*G${rr}*I${rr}*K${rr}+M${rr}-O${rr})${packSuffix}`},{align:'right',numFmt});
+        setCell(rr,18,'',{});
+        setCell(rr,19,'',{});
+        qCells.push(`Q${rr}`);
+      });
+
+      const utuhRow = itemStart + nRows;
+      const tidakRow = utuhRow + 1;
+      const totalRow = tidakRow + 1;
+
+      mergeRow(utuhRow,5,utuhRow,16);
+      setCell(utuhRow,5,'Jumlah utuh =',{align:'right', border:false, font:{bold:true}});
+      setCell(utuhRow,17,{formula:`SUM(${qCells.join(',')})`},{align:'right',numFmt});
+      setCell(utuhRow,18,{formula:`Q${utuhRow}`},{align:'right',numFmt});
+      setCell(utuhRow,19,{formula:`R${utuhRow}*D${itemStart}`},{align:'right',numFmt});
+
+      mergeRow(tidakRow,5,tidakRow,16);
+      setCell(tidakRow,5,'Jumlah tidak utuh =',{align:'right', border:false, font:{bold:true}});
+      setCell(tidakRow,17,'',{});
+      setCell(tidakRow,18,'',{});
+      setCell(tidakRow,19,Number(it.tidakUtuh)||0,{align:'right',numFmt});
+
+      mergeRow(totalRow,4,totalRow,16);
+      setCell(totalRow,4,'TOTAL',{align:'center', font:{bold:true}});
+      setCell(totalRow,17,'',{});
+      setCell(totalRow,18,'',{});
+      setCell(totalRow,19,{formula:`S${utuhRow}+S${tidakRow}`},{align:'right',numFmt,font:{bold:true}});
+
+      itemTotalRefs.push(`S${totalRow}`);
+      row = totalRow + 1;
+      row++; // blank separator row
+    });
+
+    groupTotalCells.push({name:g.name, refs:itemTotalRefs});
+  });
+
+  row++;
+  groupTotalCells.forEach(({name,refs})=>{
+    mergeRow(row,1,row,18);
+    setCell(row,1,`TOTAL ${name.toUpperCase()}`,{align:'center', font:{bold:true}, border:false});
+    setCell(row,19, refs.length ? {formula:`SUM(${refs.join(',')})`} : 0, {align:'right',numFmt,font:{bold:true}});
+    row++;
+  });
+
+  // Grand total
+  mergeRow(row,1,row,18);
+  setCell(row,1,'TOTAL KESELURUHAN',{align:'center', font:{bold:true,size:11}, border:false});
+  const allGroupRowRefs = [];
+  { let gr = row - groupTotalCells.length; groupTotalCells.forEach(()=>{ allGroupRowRefs.push(`S${gr}`); gr++; }); }
+  setCell(row,19, allGroupRowRefs.length ? {formula:`SUM(${allGroupRowRefs.join(',')})`} : 0, {align:'right',numFmt,font:{bold:true,size:11}});
+
+  // ---- Sheet tambahan: Perbandingan Stok Sistem vs Fisik (jika ada data sistem yang diimpor) ----
+  if(sistemStok.groups && Object.keys(sistemStok.groups).length){
+    const cs = wb.addWorksheet('Perbandingan Stok');
+    cs.columns = [{width:14},{width:34},{width:34},{width:16},{width:16},{width:16}];
+    let cr = 1;
+    const cHeaderFill = 'FFBDD7EE';
+    function setCCell(r,c,v,opts={}){
+      const cell = cs.getCell(r,c);
+      cell.value = v;
+      cell.font = Object.assign({name:'Arial', size:9}, opts.font||{});
+      cell.alignment = {vertical:'middle', horizontal:opts.align||'left', wrapText:!!opts.wrap};
+      cell.border = allBorders;
+      if(opts.fill) cell.fill = {type:'pattern', pattern:'solid', fgColor:{argb:opts.fill}};
+      if(opts.numFmt) cell.numFmt = opts.numFmt;
+      return cell;
+    }
+    cs.mergeCells(cr,1,cr,6);
+    setCCell(cr,1,'PERBANDINGAN STOK FISIK (HASIL HITUNG) vs STOK ERP (EXCEL)',{font:{bold:true,size:12},border:false});
+    cr++;
+    cs.mergeCells(cr,1,cr,6);
+    setCCell(cr,1,'Baris berwarna kuning = tumpukan hasil hitung fisik yang belum tercatat di data ERP (tambahan luar ERP), bukan selisih kekurangan/kelebihan biasa.',{font:{italic:true,size:8,color:{argb:'FF7A5A08'}},border:false});
+    cr += 2;
+    ['KOMODITI','TUMPUKAN (GD/KODE)','NAMA BARANG','ERP (KG)','FISIK (KG)','SELISIH (KG)'].forEach((h,i)=>{
+      setCCell(cr,i+1,h,{font:{bold:true},fill:cHeaderFill,align:'center'});
+    });
+    cr++;
+    let grandSys=0, grandFis=0;
+    state.groups.forEach(g=>{
+      const gTot = calcGroup(g);
+      const gKey = findSysGroupKey(g.name);
+      const sysGroup = gKey ? sistemStok.groups[gKey] : null;
+      const fisikTumpukan = {};
+      g.items.forEach(it=>{
+        const c = calcItem(it);
+        const label = `${(it.gd||'').trim()}/${(it.no||'').trim()}`;
+        const key = normKey(label);
+        if(!fisikTumpukan[key]) fisikTumpukan[key] = {label, netto:0, namas:new Set()};
+        fisikTumpukan[key].netto += c.totalNetto;
+        if(it.nama) fisikTumpukan[key].namas.add(it.nama);
+      });
+      const sysTumpukan = sysGroup ? sysGroup.tumpukan : {};
+      const allKeys = new Set([...Object.keys(sysTumpukan), ...Object.keys(fisikTumpukan)]);
+      if(!allKeys.size){
+        setCCell(cr,1,g.name); setCCell(cr,2,'-'); setCCell(cr,3,'-'); setCCell(cr,4,0,{numFmt,align:'right'});
+        setCCell(cr,5,gTot.netto,{numFmt,align:'right'}); setCCell(cr,6,gTot.netto,{numFmt,align:'right'});
+        cr++;
+      } else {
+        const cExtraFill = 'FFF1E4C2';
+        [...allKeys].sort().forEach(k=>{
+          const sys = sysTumpukan[k]; const fis = fisikTumpukan[k];
+          const sysQty = sys?sys.qty:0, fisQty = fis?fis.netto:0;
+          const sysNama = sys && sys.items && sys.items.length ? sys.items.map(i=>i.full||i.nama).join(' / ') : '';
+          const fisNama = fis && fis.namas && fis.namas.size ? [...fis.namas].join(' / ') : '';
+          // Tumpukan yang ada di hasil hitung fisik tapi tidak ada sama sekali di data sistem
+          // = penambahan stok di luar sistem, bukan selisih kekurangan/kelebihan biasa.
+          const isExtra = !sys && !!fis;
+          const fillOpt = isExtra ? {fill:cExtraFill} : {};
+          const namaText = (sysNama||fisNama||'-') + (isExtra ? '  [TAMBAHAN LUAR ERP]' : '');
+          setCCell(cr,1,g.name,fillOpt); setCCell(cr,2,(sys&&sys.label)||(fis&&fis.label)||k,fillOpt);
+          setCCell(cr,3,namaText,Object.assign({wrap:true},fillOpt));
+          setCCell(cr,4,sysQty,Object.assign({numFmt,align:'right'},fillOpt));
+          setCCell(cr,5,fisQty,Object.assign({numFmt,align:'right'},fillOpt));
+          setCCell(cr,6,fisQty-sysQty,Object.assign({numFmt,align:'right'},fillOpt));
+          cr++;
+        });
+      }
+      const sysTotal = sysGroup ? sysGroup.total : 0;
+      cs.mergeCells(cr,1,cr,3);
+      setCCell(cr,1,`TOTAL ${g.name.toUpperCase()}`,{font:{bold:true}});
+      setCCell(cr,4,sysTotal,{numFmt,align:'right',font:{bold:true}});
+      setCCell(cr,5,gTot.netto,{numFmt,align:'right',font:{bold:true}});
+      setCCell(cr,6,gTot.netto-sysTotal,{numFmt,align:'right',font:{bold:true}});
+      grandSys += sysTotal; grandFis += gTot.netto;
+      cr += 2;
+    });
+
+    const unmatchedForExport = getUnmatchedSistemGroups();
+    if(unmatchedForExport.length){
+      cs.mergeCells(cr,1,cr,6);
+      setCCell(cr,1,'KELOMPOK DARI ERP YANG BELUM ADA PERHITUNGAN FISIKNYA',{font:{bold:true,color:{argb:'FFB3261E'}},border:false});
+      cr++;
+      unmatchedForExport.forEach(({group})=>{
+        cs.mergeCells(cr,1,cr,3);
+        setCCell(cr,1,group.name,{font:{bold:true}});
+        setCCell(cr,4,group.total||0,{numFmt,align:'right'});
+        setCCell(cr,5,0,{numFmt,align:'right'});
+        setCCell(cr,6,0-(group.total||0),{numFmt,align:'right'});
+        grandSys += (group.total||0);
+        cr++;
+      });
+      cr++;
+    }
+
+    cs.mergeCells(cr,1,cr,3);
+    setCCell(cr,1,'TOTAL KESELURUHAN',{font:{bold:true,size:11}});
+    setCCell(cr,4,grandSys,{numFmt,align:'right',font:{bold:true,size:11}});
+    setCCell(cr,5,grandFis,{numFmt,align:'right',font:{bold:true,size:11}});
+    setCCell(cr,6,grandFis-grandSys,{numFmt,align:'right',font:{bold:true,size:11}});
+  }
+
+  const tanggal = state.meta.tanggal || new Date().toISOString().slice(0,10);
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `Perhitungan-Stok-Gudang-${tanggal}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function addGroup(name){ state.groups.push(emptyGroup(name)); render(); }
+
+function toggleGroup(id){
+  const g = state.groups.find(x=>x.id===id);
+  if(!g) return;
+  g.collapsed = !g.collapsed;
+  render();
+}
+
+let activeTab = 'hitung';
+function switchTab(tab){
+  activeTab = tab;
+  document.getElementById('tabHitung').style.display = tab==='hitung' ? '' : 'none';
+  document.getElementById('tabRekap').style.display = tab==='rekap' ? '' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+}
+
+function handleGroupPreset(sel){
+  const val = sel.value;
+  if(!val) return;
+  addGroup(val === '__custom__' ? null : val);
+  sel.value = '';
+}
+
+function resetAll(){
+  if(confirm('Hapus semua data perhitungan stok? Tindakan ini tidak bisa dibatalkan.')){
+    state = { meta:{unit:'',gudang:'',komoditi:'',tanggal:''}, groups:[] };
+    render();
+  }
+}
+
+async function save(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const note = document.getElementById('saveNote');
+    note.textContent = 'Tersimpan otomatis · ' + new Date().toLocaleTimeString('id-ID');
+  }catch(e){ console.error('Gagal menyimpan', e); }
+}
+
+async function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      state = JSON.parse(raw);
+    }
+  }catch(e){
+    // no saved data yet
+  }
+  render();
+}
+
+loadSistem();
+load();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
